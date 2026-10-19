@@ -7,8 +7,8 @@ ROOT = pathlib.Path(__file__).resolve().parents[1]
 IDENTITY = json.loads((ROOT / ".embeddedville-workspace.json").read_text())
 LOCK = json.loads((ROOT / "release-lock.json").read_text())
 ACTIVITIES = set(IDENTITY["activities"])
-ALLOW_PREFIXES = ("src/", "include/", "evidence/")
-ALLOW_FILES = {"Makefile"}
+ALLOW_PREFIXES = ("src/", "include/")
+ALLOW_FILES = {"Makefile", "evidence/manifest.json"}
 
 def run(*cmd: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     print("+", " ".join(cmd))
