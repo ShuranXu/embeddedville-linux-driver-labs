@@ -1,0 +1,13 @@
+.lab-state/
+*.ko
+*.mod
+*.mod.c
+*.mod.o
+*.o
+*.order
+*.symvers
+.modules.order.cmd
+.Module.symvers.cmd
+.*.cmd
+__pycache__/
+evidence/*-submission.zip

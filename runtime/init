@@ -1,0 +1,26 @@
+#!/bin/sh
+set -eu
+
+mount -t proc proc /proc
+mount -t sysfs sysfs /sys
+mount -t devtmpfs devtmpfs /dev
+mount -t tmpfs tmpfs /run
+mount -t debugfs debugfs /sys/kernel/debug
+hostname embeddedville-guest
+
+mount -t 9p -o trans=virtio,version=9p2000.L workspace /workspace
+mkdir -p /root/.ssh /etc/dropbear
+if [ ! -s /workspace/.lab-state/guest_authorized_keys ]; then
+  echo "Missing /workspace/.lab-state/guest_authorized_keys" >&2
+  exec sh
+fi
+cp /workspace/.lab-state/guest_authorized_keys /root/.ssh/authorized_keys
+chmod 700 /root/.ssh
+chmod 600 /root/.ssh/authorized_keys
+
+ip link set lo up
+ip link set eth0 up
+udhcpc -i eth0 -q -n || true
+/usr/sbin/dropbear -R -E -s -p 22
+echo "EMBEDDEDVILLE_GUEST_READY $(uname -r)"
+exec setsid cttyhack sh
