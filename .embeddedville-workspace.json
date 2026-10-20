@@ -3,6 +3,6 @@
   "courseId": "linux-device-drivers-interfaces",
   "contractVersion": "2026.10-linux-device-drivers-v1",
   "repository": "ShuranXu/embeddedville-linux-driver-labs",
-  "starterVersion": "linux-driver-interfaces-v1.1.1",
+  "starterVersion": "linux-driver-interfaces-v1.1.2",
   "activities": ["ldd1-lab-lifecycle", "ldd1-lab-char-buffer", "ldd1-lab-poll-queue", "ldd1-lab-concurrency", "ldd1-capstone-qevent"]
 }
