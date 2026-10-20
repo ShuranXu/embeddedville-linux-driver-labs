@@ -11,70 +11,85 @@ jobs="${BUILD_JOBS:-$(nproc)}"
 install_root=/opt/embeddedville
 guest_root="$install_root/guest/rootfs"
 mkdir -p "$install_root" "$guest_root"
+component="${1:-all}"
 
-download "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz" /tmp/linux.tar.xz "$LINUX_SHA256"
-tar -C /opt/embeddedville -xf /tmp/linux.tar.xz
-kernel="$install_root/linux-${LINUX_VERSION}"
-make -C "$kernel" defconfig
-while IFS='=' read -r symbol value; do
-  case "$symbol" in
-    CONFIG_*)
-      case "$value" in
-        y) "$kernel/scripts/config" --file "$kernel/.config" --enable "${symbol#CONFIG_}" ;;
-        m) "$kernel/scripts/config" --file "$kernel/.config" --module "${symbol#CONFIG_}" ;;
-        n) "$kernel/scripts/config" --file "$kernel/.config" --disable "${symbol#CONFIG_}" ;;
-      esac
-      ;;
-  esac
-done < /tmp/embeddedville-runtime/linux.config
-make -C "$kernel" olddefconfig
-grep -q '^CONFIG_MODULES=y$' "$kernel/.config"
-grep -q '^CONFIG_NET_9P_VIRTIO=y$' "$kernel/.config"
-grep -q '^CONFIG_GPIO_SIM=m$' "$kernel/.config"
-grep -q '^CONFIG_I2C_STUB=m$' "$kernel/.config"
-make -C "$kernel" -j"$jobs" bzImage modules
-make -C "$kernel" modules_install INSTALL_MOD_PATH="$guest_root"
-cp "$kernel/arch/x86/boot/bzImage" "$install_root/guest/bzImage"
+if [[ "$component" == kernel || "$component" == all ]]; then
+  download "https://cdn.kernel.org/pub/linux/kernel/v6.x/linux-${LINUX_VERSION}.tar.xz" /tmp/linux.tar.xz "$LINUX_SHA256"
+  tar -C /opt/embeddedville -xf /tmp/linux.tar.xz
+  kernel="$install_root/linux-${LINUX_VERSION}"
+  make -C "$kernel" defconfig
+  while IFS='=' read -r symbol value; do
+    case "$symbol" in
+      CONFIG_*)
+        case "$value" in
+          y) "$kernel/scripts/config" --file "$kernel/.config" --enable "${symbol#CONFIG_}" ;;
+          m) "$kernel/scripts/config" --file "$kernel/.config" --module "${symbol#CONFIG_}" ;;
+          n) "$kernel/scripts/config" --file "$kernel/.config" --disable "${symbol#CONFIG_}" ;;
+        esac
+        ;;
+    esac
+  done < /tmp/embeddedville-runtime/linux.config
+  make -C "$kernel" olddefconfig
+  grep -q '^CONFIG_MODULES=y$' "$kernel/.config"
+  grep -q '^CONFIG_NET_9P_VIRTIO=y$' "$kernel/.config"
+  grep -q '^CONFIG_GPIO_SIM=m$' "$kernel/.config"
+  grep -q '^CONFIG_I2C_STUB=m$' "$kernel/.config"
+  make -C "$kernel" -j"$jobs" bzImage modules
+  make -C "$kernel" modules_install INSTALL_MOD_PATH="$guest_root" INSTALL_MOD_STRIP=1
+  cp "$kernel/arch/x86/boot/bzImage" "$install_root/guest/bzImage"
+  rm -f "$kernel/vmlinux" "$kernel/vmlinux.o" "$kernel/System.map" "$kernel"/.tmp_vmlinux*
+  rm -f /tmp/linux.tar.xz
+fi
 
-download "https://busybox.net/downloads/busybox-${BUSYBOX_VERSION}.tar.bz2" /tmp/busybox.tar.bz2 "$BUSYBOX_SHA256"
-tar -C /tmp -xf /tmp/busybox.tar.bz2
-busybox="/tmp/busybox-${BUSYBOX_VERSION}"
-make -C "$busybox" defconfig
-sed -i 's/^# CONFIG_STATIC is not set/CONFIG_STATIC=y/' "$busybox/.config"
-make -C "$busybox" -j"$jobs" CC=musl-gcc
-make -C "$busybox" CC=musl-gcc CONFIG_PREFIX="$guest_root" install
+if [[ "$component" == busybox || "$component" == all ]]; then
+  download "https://busybox.net/downloads/busybox-${BUSYBOX_VERSION}.tar.bz2" /tmp/busybox.tar.bz2 "$BUSYBOX_SHA256"
+  tar -C /tmp -xf /tmp/busybox.tar.bz2
+  busybox="/tmp/busybox-${BUSYBOX_VERSION}"
+  make -C "$busybox" defconfig
+  sed -i 's/^# CONFIG_STATIC is not set/CONFIG_STATIC=y/' "$busybox/.config"
+  make -C "$busybox" olddefconfig
+  make -C "$busybox" -j"$jobs"
+  make -C "$busybox" CONFIG_PREFIX="$guest_root" install
+  rm -rf /tmp/busybox.tar.bz2 /tmp/busybox-"$BUSYBOX_VERSION"
+fi
 
-download "https://matt.ucc.asn.au/dropbear/releases/dropbear-${DROPBEAR_VERSION}.tar.bz2" /tmp/dropbear.tar.bz2 "$DROPBEAR_SHA256"
-tar -C /tmp -xf /tmp/dropbear.tar.bz2
-dropbear="/tmp/dropbear-${DROPBEAR_VERSION}"
-(
-  cd "$dropbear"
-  CC=musl-gcc CFLAGS='-Os' LDFLAGS='-static' ./configure --disable-zlib --disable-lastlog --disable-utmp --disable-utmpx --disable-wtmp --disable-wtmpx
-  make -j"$jobs" PROGRAMS="dropbear dropbearkey"
-)
-install -D -m 0755 "$dropbear/dropbear" "$guest_root/usr/sbin/dropbear"
-install -D -m 0755 "$dropbear/dropbearkey" "$guest_root/usr/bin/dropbearkey"
+if [[ "$component" == dropbear || "$component" == all ]]; then
+  download "https://matt.ucc.asn.au/dropbear/releases/dropbear-${DROPBEAR_VERSION}.tar.bz2" /tmp/dropbear.tar.bz2 "$DROPBEAR_SHA256"
+  tar -C /tmp -xf /tmp/dropbear.tar.bz2
+  dropbear="/tmp/dropbear-${DROPBEAR_VERSION}"
+  (
+    cd "$dropbear"
+    CC=musl-gcc CFLAGS='-Os' LDFLAGS='-static' ./configure --disable-zlib --disable-lastlog --disable-utmp --disable-utmpx --disable-wtmp --disable-wtmpx
+    make -j"$jobs" PROGRAMS="dropbear dropbearkey"
+  )
+  install -D -m 0755 "$dropbear/dropbear" "$guest_root/usr/sbin/dropbear"
+  install -D -m 0755 "$dropbear/dropbearkey" "$guest_root/usr/bin/dropbearkey"
+  rm -rf /tmp/dropbear.tar.bz2 /tmp/dropbear-"$DROPBEAR_VERSION"
+fi
 
-install -D -m 0755 /tmp/embeddedville-runtime/init "$guest_root/init"
-mkdir -p "$guest_root"/{dev,proc,sys,tmp,run,root/.ssh,etc/dropbear,workspace}
-chmod 1777 "$guest_root/tmp"
-printf 'root:x:0:0:root:/root:/bin/sh\n' > "$guest_root/etc/passwd"
-printf 'root:x:0:\n' > "$guest_root/etc/group"
-printf 'nameserver 10.0.2.3\n' > "$guest_root/etc/resolv.conf"
-depmod -b "$guest_root" "$LINUX_VERSION"
-(
-  cd "$guest_root"
-  find . -print0 | cpio --null -o --format=newc | gzip -9 > "$install_root/guest/initramfs.cpio.gz"
-)
+if [[ "$component" == guest || "$component" == all ]]; then
+  install -D -m 0755 /tmp/embeddedville-runtime/init "$guest_root/init"
+  mkdir -p "$guest_root"/{dev,proc,sys,tmp,run,root/.ssh,etc/dropbear,workspace}
+  chmod 1777 "$guest_root/tmp"
+  printf 'root:x:0:0:root:/root:/bin/sh\n' > "$guest_root/etc/passwd"
+  printf 'root:x:0:\n' > "$guest_root/etc/group"
+  printf 'nameserver 10.0.2.3\n' > "$guest_root/etc/resolv.conf"
+  depmod -b "$guest_root" "$LINUX_VERSION"
+  (
+    cd "$guest_root"
+    find . -print0 | cpio --null -o --format=newc | gzip -9 > "$install_root/guest/initramfs.cpio.gz"
+  )
+fi
 
-download "https://download.qemu.org/qemu-${QEMU_VERSION}.tar.xz" /tmp/qemu.tar.xz "$QEMU_SHA256"
-tar -C /tmp -xf /tmp/qemu.tar.xz
-qemu="/tmp/qemu-${QEMU_VERSION}"
-(
-  cd "$qemu"
-  ./configure --target-list=x86_64-softmmu --disable-docs --disable-gtk --disable-sdl --disable-vnc --disable-werror
-  ninja -C build -j"$jobs"
-  ninja -C build install
-)
-
-rm -rf /tmp/linux.tar.xz /tmp/busybox* /tmp/dropbear* /tmp/qemu*
+if [[ "$component" == qemu || "$component" == all ]]; then
+  download "https://download.qemu.org/qemu-${QEMU_VERSION}.tar.xz" /tmp/qemu.tar.xz "$QEMU_SHA256"
+  tar -C /tmp -xf /tmp/qemu.tar.xz
+  qemu="/tmp/qemu-${QEMU_VERSION}"
+  (
+    cd "$qemu"
+    ./configure --target-list=x86_64-softmmu --disable-docs --disable-gtk --disable-sdl --disable-vnc --disable-werror
+    ninja -C build -j"$jobs"
+    ninja -C build install
+  )
+  rm -rf /tmp/qemu.tar.xz /tmp/qemu-"$QEMU_VERSION"
+fi
