@@ -12,7 +12,7 @@ ARG DROPBEAR_SHA256=e098034a843699200c8c977a991fff73159735bf795d5f72ef672c41a6b1
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     autoconf automake bc bison build-essential ca-certificates cpio curl file flex git \
-    iproute2 jq libelf-dev libglib2.0-dev libncurses-dev libpixman-1-dev libslirp-dev \
+    iproute2 jq kmod libelf-dev libglib2.0-dev libncurses-dev libpixman-1-dev libslirp-dev \
     libtool meson musl-tools ninja-build openssh-client pkg-config procps python3 \
     python3-venv rsync shellcheck sparse unzip xz-utils && \
     rm -rf /var/lib/apt/lists/*
