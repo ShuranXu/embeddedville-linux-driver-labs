@@ -82,12 +82,16 @@ def reset(_: argparse.Namespace) -> None:
     if pid_file.exists():
         try:
             pid = int(pid_file.read_text().strip())
-            os.kill(pid, 15)
-            for _ in range(20):
-                try: os.kill(pid, 0)
-                except ProcessLookupError: break
-                time.sleep(0.1)
-        except (ValueError, ProcessLookupError, PermissionError):
+            command_line = pathlib.Path(f"/proc/{pid}/cmdline").read_bytes().replace(b"\0", b" ")
+            if b"qemu-system-x86_64" in command_line and str(ROOT).encode() in command_line:
+                os.kill(pid, 15)
+                for _ in range(20):
+                    try: os.kill(pid, 0)
+                    except ProcessLookupError: break
+                    time.sleep(0.1)
+            else:
+                print(f"Ignoring stale QEMU PID {pid}; it does not belong to this workspace.")
+        except (ValueError, FileNotFoundError, ProcessLookupError, PermissionError):
             pass
     run("make", "clean", check=False)
     shutil.rmtree(STATE, ignore_errors=True)
