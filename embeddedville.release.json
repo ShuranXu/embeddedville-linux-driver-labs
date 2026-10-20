@@ -2,7 +2,7 @@
   "schemaVersion": 1,
   "project": { "id": "embeddedville-linux-driver-labs", "kind": "course-source", "courseIds": ["linux-device-drivers-interfaces", "linux-device-drivers-hardware"] },
   "repository": { "expectedRemote": "https://github.com/ShuranXu/embeddedville-linux-driver-labs.git", "defaultBranch": "main", "immutableReleaseTagsRequired": true },
-  "source": { "protectedPaths": ["src", "include", "tools", "tests", "runtime", ".devcontainer", ".github/workflows"], "baselineTag": "linux-driver-interfaces-v1.1.0" },
+  "source": { "protectedPaths": ["src", "include", "tools", "tests", "runtime", ".devcontainer", ".github/workflows"], "baselineTag": "linux-driver-interfaces-v1.1.1" },
   "validation": { "commands": ["./lab doctor", "./lab build --activity ldd1-lab-lifecycle", "./lab test --activity ldd1-lab-lifecycle"] },
   "deployment": { "managedBy": "embeddedville-learning-platform", "workflow": null, "productionRef": null }
 }
