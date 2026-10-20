@@ -46,8 +46,11 @@ if [[ "$component" == busybox || "$component" == all ]]; then
   tar -C /tmp -xf /tmp/busybox.tar.bz2
   busybox="/tmp/busybox-${BUSYBOX_VERSION}"
   make -C "$busybox" defconfig
-  sed -i 's/^# CONFIG_STATIC is not set/CONFIG_STATIC=y/' "$busybox/.config"
-  make -C "$busybox" olddefconfig
+  sed -i \
+    -e 's/^# CONFIG_STATIC is not set/CONFIG_STATIC=y/' \
+    -e 's/^CONFIG_TC=y/# CONFIG_TC is not set/' \
+    "$busybox/.config"
+  make -C "$busybox" oldconfig </dev/null
   make -C "$busybox" -j"$jobs"
   make -C "$busybox" CONFIG_PREFIX="$guest_root" install
   rm -rf /tmp/busybox.tar.bz2 /tmp/busybox-"$BUSYBOX_VERSION"
