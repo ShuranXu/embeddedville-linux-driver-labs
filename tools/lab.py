@@ -29,6 +29,10 @@ def activity(value: str | None) -> str:
 
 def doctor(_: argparse.Namespace) -> None:
     problems=[]
+    locked_digest=LOCK.get("toolchainImageDigest")
+    environment_digest=os.environ.get("EMBEDDEDVILLE_TOOLCHAIN_DIGEST")
+    if not isinstance(locked_digest,str) or not locked_digest.startswith("sha256:") or len(locked_digest)!=71: problems.append("release lock does not contain an immutable toolchain digest")
+    if environment_digest!=locked_digest: problems.append("running container digest differs from release lock")
     if not str(ROOT).startswith("/workspaces/") and sys.platform != "win32": problems.append("workspace is not under /workspaces")
     for name in ("make", "gcc", "qemu-system-x86_64", "ssh", "ssh-keygen", "sparse"):
         if shutil.which(name) is None: problems.append(f"missing {name}")
