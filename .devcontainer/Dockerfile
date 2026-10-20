@@ -18,7 +18,11 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     rm -rf /var/lib/apt/lists/*
 
 COPY runtime /tmp/embeddedville-runtime
-RUN /tmp/embeddedville-runtime/build-toolchain.sh && rm -rf /tmp/embeddedville-runtime
+RUN /tmp/embeddedville-runtime/build-toolchain.sh kernel
+RUN /tmp/embeddedville-runtime/build-toolchain.sh busybox
+RUN /tmp/embeddedville-runtime/build-toolchain.sh dropbear
+RUN /tmp/embeddedville-runtime/build-toolchain.sh guest
+RUN /tmp/embeddedville-runtime/build-toolchain.sh qemu && rm -rf /tmp/embeddedville-runtime
 
 RUN useradd -m -s /bin/bash vscode && \
     mkdir -p /workspaces && \
