@@ -62,9 +62,13 @@ if [[ "$component" == dropbear || "$component" == all ]]; then
   dropbear="/tmp/dropbear-${DROPBEAR_VERSION}"
   (
     cd "$dropbear"
-    CC=musl-gcc CFLAGS='-Os' LDFLAGS='-static' ./configure --disable-zlib --disable-lastlog --disable-utmp --disable-utmpx --disable-wtmp --disable-wtmpx
+    CC=musl-gcc CFLAGS='-Os' ./configure --enable-static --disable-zlib --disable-lastlog --disable-utmp --disable-utmpx --disable-wtmp --disable-wtmpx
     make -j"$jobs" PROGRAMS="dropbear dropbearkey"
   )
+  if readelf -l "$dropbear/dropbear" | grep -q 'INTERP'; then
+    echo "dropbear must not depend on a guest dynamic loader" >&2
+    exit 1
+  fi
   install -D -m 0755 "$dropbear/dropbear" "$guest_root/usr/sbin/dropbear"
   install -D -m 0755 "$dropbear/dropbearkey" "$guest_root/usr/bin/dropbearkey"
   rm -rf /tmp/dropbear.tar.bz2 /tmp/dropbear-"$DROPBEAR_VERSION"
