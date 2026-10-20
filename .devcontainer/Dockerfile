@@ -19,6 +19,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 COPY runtime /tmp/embeddedville-runtime
 RUN /tmp/embeddedville-runtime/build-toolchain.sh kernel
+RUN find "/opt/embeddedville/linux-${LINUX_VERSION}" -type f \
+      \( -name '*.o' -o -name '*.a' -o -name 'vmlinux*' -o -name 'System.map' \) -delete
 RUN /tmp/embeddedville-runtime/build-toolchain.sh busybox
 RUN /tmp/embeddedville-runtime/build-toolchain.sh dropbear
 RUN /tmp/embeddedville-runtime/build-toolchain.sh guest
