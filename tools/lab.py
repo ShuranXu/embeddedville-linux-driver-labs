@@ -9,6 +9,14 @@ LOCK = json.loads((ROOT / "release-lock.json").read_text())
 ACTIVITIES = set(IDENTITY["activities"])
 ALLOW_PREFIXES = ("src/", "include/")
 ALLOW_FILES = {"Makefile", "evidence/manifest.json"}
+STATE = ROOT / ".lab-state"
+SSH_PORT = str(LOCK["runtime"]["sshPort"])
+SSH_OPTIONS = (
+    "-i", str(STATE / "id_ed25519"), "-p", SSH_PORT,
+    "-o", "BatchMode=yes", "-o", "IdentitiesOnly=yes",
+    "-o", "StrictHostKeyChecking=no", "-o", "UserKnownHostsFile=/dev/null",
+    "-o", "ConnectTimeout=5",
+)
 
 def run(*cmd: str, check: bool = True) -> subprocess.CompletedProcess[str]:
     print("+", " ".join(cmd))
@@ -22,10 +30,19 @@ def activity(value: str | None) -> str:
 def doctor(_: argparse.Namespace) -> None:
     problems=[]
     if not str(ROOT).startswith("/workspaces/") and sys.platform != "win32": problems.append("workspace is not under /workspaces")
-    for name in ("make", "gcc", "qemu-system-x86_64"):
+    for name in ("make", "gcc", "qemu-system-x86_64", "ssh", "ssh-keygen", "sparse"):
         if shutil.which(name) is None: problems.append(f"missing {name}")
     qemu = subprocess.run(["qemu-system-x86_64", "--version"], text=True, capture_output=True).stdout if shutil.which("qemu-system-x86_64") else ""
     if LOCK["sources"]["qemu"]["version"] not in qemu: problems.append("QEMU version differs from release lock")
+    kernel_release = pathlib.Path("/opt/embeddedville/linux-6.18.57/include/config/kernel.release")
+    if not kernel_release.exists() or kernel_release.read_text().strip() != LOCK["sources"]["linux"]["version"]: problems.append("prepared kernel differs from release lock")
+    for artifact in ("/opt/embeddedville/guest/bzImage", "/opt/embeddedville/guest/initramfs.cpio.gz", "/opt/embeddedville/toolchain-release"):
+        if not pathlib.Path(artifact).is_file(): problems.append(f"missing {artifact}")
+    if sys.platform != "win32":
+        meminfo = pathlib.Path("/proc/meminfo").read_text(errors="replace")
+        total_kib = int(next(line.split()[1] for line in meminfo.splitlines() if line.startswith("MemTotal:")))
+        if total_kib < 7 * 1024 * 1024: problems.append("at least 8 GB Codespaces memory is required")
+        if shutil.disk_usage(ROOT).free < 8 * 1024**3: problems.append("at least 8 GB free workspace storage is required")
     print(f"course={IDENTITY['courseId']} starter={IDENTITY['starterVersion']} contract={IDENTITY['contractVersion']}")
     if problems: raise SystemExit("doctor failed: " + "; ".join(problems))
     print("doctor: ready; QEMU uses software TCG and guest transport is localhost-only")
@@ -37,20 +54,41 @@ def build(args: argparse.Namespace) -> None:
 
 def boot(_: argparse.Namespace) -> None:
     runner = ROOT / "tools" / "qemu-boot.sh"
-    if not runner.exists(): raise SystemExit("Guest image is not provisioned. Run ./lab reset after the release image is available.")
+    if not runner.exists(): raise SystemExit("QEMU boot helper is missing from this starter release.")
     run("bash", str(runner))
 
-def test(args: argparse.Namespace) -> None:
+def guest(*command: str) -> None:
+    if not (STATE / "id_ed25519").exists(): raise SystemExit("Guest key is missing; run ./lab boot first.")
+    run("ssh", *SSH_OPTIONS, "root@127.0.0.1", *command)
+
+def run_activity(args: argparse.Namespace) -> None:
     item = activity(args.activity)
     build(argparse.Namespace(activity=item))
     run("bash", "tests/public/run.sh", item)
+    boot(argparse.Namespace())
+    guest("/bin/sh", "/workspace/tests/public/guest.sh", IDENTITY["courseId"], item)
+
+def test(args: argparse.Namespace) -> None:
+    item = activity(args.activity)
+    run_activity(args)
     evidence = ROOT / "evidence"; evidence.mkdir(exist_ok=True)
-    (evidence / "manifest.json").write_text(json.dumps({"schemaVersion":1,"courseId":IDENTITY["courseId"],"contractVersion":IDENTITY["contractVersion"],"starterVersion":IDENTITY["starterVersion"],"activityId":item,"generatedAt":int(time.time())}, indent=2)+"\n")
+    (evidence / "manifest.json").write_text(json.dumps({"schemaVersion":1,"courseId":IDENTITY["courseId"],"contractVersion":IDENTITY["contractVersion"],"starterVersion":IDENTITY["starterVersion"],"activityId":item,"kernelVersion":LOCK["sources"]["linux"]["version"],"qemuVersion":LOCK["sources"]["qemu"]["version"],"acceleration":"tcg","generatedAt":int(time.time())}, indent=2)+"\n")
 
 def reset(_: argparse.Namespace) -> None:
+    pid_file = STATE / "qemu.pid"
+    if pid_file.exists():
+        try:
+            pid = int(pid_file.read_text().strip())
+            os.kill(pid, 15)
+            for _ in range(20):
+                try: os.kill(pid, 0)
+                except ProcessLookupError: break
+                time.sleep(0.1)
+        except (ValueError, ProcessLookupError, PermissionError):
+            pass
     run("make", "clean", check=False)
-    shutil.rmtree(ROOT / ".lab-state", ignore_errors=True)
-    print("Generated build and runtime state cleared; learner source was preserved.")
+    shutil.rmtree(STATE, ignore_errors=True)
+    print("Generated build and runtime state cleared; learner source and evidence were preserved.")
 
 def snapshot(item: str) -> tuple[pathlib.Path, dict, str, str]:
     files=[]
@@ -100,7 +138,7 @@ def main() -> None:
     parser=argparse.ArgumentParser(prog="./lab"); sub=parser.add_subparsers(required=True)
     for name,fn in (("doctor",doctor),("boot",boot),("reset",reset)):
         command=sub.add_parser(name); command.set_defaults(fn=fn)
-    for name,fn in (("build",build),("run",test),("test",test),("package",package),("submit",submit)):
+    for name,fn in (("build",build),("run",run_activity),("test",test),("package",package),("submit",submit)):
         command=sub.add_parser(name); command.add_argument("--activity"); command.set_defaults(fn=fn)
     args=parser.parse_args(); args.fn(args)
 if __name__=="__main__": main()
