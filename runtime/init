@@ -20,7 +20,8 @@ chmod 600 /root/.ssh/authorized_keys
 
 ip link set lo up
 ip link set eth0 up
-udhcpc -i eth0 -q -n || true
+ip addr add 10.0.2.15/24 dev eth0
+ip route add default via 10.0.2.2 dev eth0
 /usr/sbin/dropbear -R -E -s -p 22
 echo "EMBEDDEDVILLE_GUEST_READY $(uname -r)"
 exec setsid cttyhack sh
