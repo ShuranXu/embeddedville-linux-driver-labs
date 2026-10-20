@@ -3,6 +3,6 @@
   "courseId": "linux-device-drivers-hardware",
   "contractVersion": "2026.10-linux-device-drivers-v1",
   "repository": "ShuranXu/embeddedville-linux-driver-labs",
-  "starterVersion": "linux-driver-hardware-v1.1.0",
+  "starterVersion": "linux-driver-hardware-v1.1.1",
   "activities": ["ldd2-lab-edu-bind", "ldd2-lab-factorial", "ldd2-lab-irq", "ldd2-lab-dma", "ldd2-lab-gpio-sim", "ldd2-lab-i2c-stub", "ldd2-capstone-edu"]
 }
