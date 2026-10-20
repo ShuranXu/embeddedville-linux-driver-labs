@@ -1,10 +1,10 @@
 {
   "name": "EmbeddedVille Linux Driver Lab",
-  "image": "ghcr.io/shuranxu/embeddedville-linux-driver-toolchain@sha256:7307e373989fdf7b0168f59252e6d941769ed591bd6c973a511fe088f62a02cf",
+  "image": "ghcr.io/shuranxu/embeddedville-linux-driver-toolchain@sha256:a09add7465bf3650be6f1c68d9d66e5b6670a891ced1898d649cf0584005e13e",
   "workspaceFolder": "/workspaces/embeddedville-linux-driver-labs",
   "remoteUser": "vscode",
   "containerEnv": {
-    "EMBEDDEDVILLE_TOOLCHAIN_DIGEST": "sha256:7307e373989fdf7b0168f59252e6d941769ed591bd6c973a511fe088f62a02cf"
+    "EMBEDDEDVILLE_TOOLCHAIN_DIGEST": "sha256:a09add7465bf3650be6f1c68d9d66e5b6670a891ced1898d649cf0584005e13e"
   },
   "forwardPorts": [2222],
   "portsAttributes": {
