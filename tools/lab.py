@@ -34,11 +34,14 @@ def doctor(_: argparse.Namespace) -> None:
         if shutil.which(name) is None: problems.append(f"missing {name}")
     qemu = subprocess.run(["qemu-system-x86_64", "--version"], text=True, capture_output=True).stdout if shutil.which("qemu-system-x86_64") else ""
     if LOCK["sources"]["qemu"]["version"] not in qemu: problems.append("QEMU version differs from release lock")
+    accelerators = subprocess.run(["qemu-system-x86_64", "-accel", "help"], text=True, capture_output=True).stdout if shutil.which("qemu-system-x86_64") else ""
+    if "tcg" not in accelerators.split(): problems.append("QEMU TCG acceleration is unavailable")
     kernel_release = pathlib.Path("/opt/embeddedville/linux-6.18.57/include/config/kernel.release")
     if not kernel_release.exists() or kernel_release.read_text().strip() != LOCK["sources"]["linux"]["version"]: problems.append("prepared kernel differs from release lock")
     for artifact in ("/opt/embeddedville/guest/bzImage", "/opt/embeddedville/guest/initramfs.cpio.gz", "/opt/embeddedville/toolchain-release"):
         if not pathlib.Path(artifact).is_file(): problems.append(f"missing {artifact}")
     if sys.platform != "win32":
+        if (os.cpu_count() or 0) < 2: problems.append("at least 2 CPU cores are required")
         meminfo = pathlib.Path("/proc/meminfo").read_text(errors="replace")
         total_kib = int(next(line.split()[1] for line in meminfo.splitlines() if line.startswith("MemTotal:")))
         if total_kib < 7 * 1024 * 1024: problems.append("at least 8 GB Codespaces memory is required")
