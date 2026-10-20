@@ -22,11 +22,16 @@ while IFS='=' read -r symbol value; do
       case "$value" in
         y) "$kernel/scripts/config" --file "$kernel/.config" --enable "${symbol#CONFIG_}" ;;
         m) "$kernel/scripts/config" --file "$kernel/.config" --module "${symbol#CONFIG_}" ;;
+        n) "$kernel/scripts/config" --file "$kernel/.config" --disable "${symbol#CONFIG_}" ;;
       esac
       ;;
   esac
 done < /tmp/embeddedville-runtime/linux.config
 make -C "$kernel" olddefconfig
+grep -q '^CONFIG_MODULES=y$' "$kernel/.config"
+grep -q '^CONFIG_NET_9P_VIRTIO=y$' "$kernel/.config"
+grep -q '^CONFIG_GPIO_SIM=m$' "$kernel/.config"
+grep -q '^CONFIG_I2C_STUB=m$' "$kernel/.config"
 make -C "$kernel" -j"$jobs" bzImage modules
 make -C "$kernel" modules_install INSTALL_MOD_PATH="$guest_root"
 cp "$kernel/arch/x86/boot/bzImage" "$install_root/guest/bzImage"
