@@ -10,7 +10,7 @@ port="${EMBEDDEDVILLE_GUEST_SSH_PORT:-2222}"
 mkdir -p "$state"
 if [[ -s "$state/qemu.pid" ]]; then
   pid="$(cat "$state/qemu.pid")"
-  if kill -0 "$pid" 2>/dev/null; then
+  if kill -0 "$pid" 2>/dev/null && tr '\0' ' ' < "/proc/$pid/cmdline" | grep -Fq "qemu-system-x86_64" && tr '\0' ' ' < "/proc/$pid/cmdline" | grep -Fq "path=$root"; then
     echo "QEMU guest already running (pid $pid)."
     exit 0
   fi
@@ -52,7 +52,7 @@ printf '%s\n' "$pid" > "$state/qemu.pid"
 printf '%s\n' "$course_id" > "$state/course-id"
 
 ssh_opts=(-i "$state/id_ed25519" -p "$port" -o BatchMode=yes -o IdentitiesOnly=yes -o StrictHostKeyChecking=no -o UserKnownHostsFile=/dev/null -o ConnectTimeout=2)
-for _ in $(seq 1 90); do
+for _ in $(seq 1 180); do
   if ! kill -0 "$pid" 2>/dev/null; then
     echo "QEMU exited before SSH became ready." >&2
     tail -n 100 "$state/serial.log" >&2 || true
