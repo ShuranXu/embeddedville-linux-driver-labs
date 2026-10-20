@@ -1,21 +1,34 @@
 FROM ubuntu:24.04@sha256:a2d43bffc46670d7108bb3c0468c67c5557c4c92e83e1e34cbff1322ad1b94dc
 
 ARG DEBIAN_FRONTEND=noninteractive
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    bc bison build-essential ca-certificates cpio curl flex git libelf-dev libglib2.0-dev \
-    libncurses-dev libpixman-1-dev libslirp-dev meson ninja-build openssh-client pkg-config \
-    python3 python3-venv rsync sparse unzip xz-utils && rm -rf /var/lib/apt/lists/*
-
+ARG LINUX_VERSION=6.18.57
+ARG LINUX_SHA256=5bd9acdc82ec5efc3790ae840e5aaa40dfde7efff261cf6dde902dc570acf98c
 ARG QEMU_VERSION=11.1.2
 ARG QEMU_SHA256=731b5681e4bb18be313231579b8efd0296c5b015fa36dc533874b639ba838016
-RUN curl --fail --location --retry 3 -o /tmp/qemu.tar.xz "https://download.qemu.org/qemu-${QEMU_VERSION}.tar.xz" \
- && echo "${QEMU_SHA256}  /tmp/qemu.tar.xz" | sha256sum -c - \
- && tar -C /tmp -xf /tmp/qemu.tar.xz \
- && cd "/tmp/qemu-${QEMU_VERSION}" \
- && ./configure --target-list=x86_64-softmmu --disable-docs --disable-gtk --disable-sdl --disable-vnc \
- && ninja -C build -j2 \
- && ninja -C build install \
- && rm -rf /tmp/qemu*
+ARG BUSYBOX_VERSION=1.37.0
+ARG BUSYBOX_SHA256=3311dff32e746499f4df0d5df04d7eb396382d7e108bb9250e7b519b837043a4
+ARG DROPBEAR_VERSION=2026.94
+ARG DROPBEAR_SHA256=e098034a843699200c8c977a991fff73159735bf795d5f72ef672c41a6b1ae81
 
-RUN useradd -m -s /bin/bash vscode && mkdir -p /workspaces /opt/embeddedville && chown -R vscode:vscode /workspaces /opt/embeddedville
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    autoconf automake bc bison build-essential ca-certificates cpio curl file flex git \
+    iproute2 jq libelf-dev libglib2.0-dev libncurses-dev libpixman-1-dev libslirp-dev \
+    libtool meson musl-tools ninja-build openssh-client pkg-config procps python3 \
+    python3-venv rsync shellcheck sparse unzip xz-utils && \
+    rm -rf /var/lib/apt/lists/*
+
+COPY runtime /tmp/embeddedville-runtime
+RUN /tmp/embeddedville-runtime/build-toolchain.sh && rm -rf /tmp/embeddedville-runtime
+
+RUN useradd -m -s /bin/bash vscode && \
+    mkdir -p /workspaces && \
+    chown -R vscode:vscode /workspaces && \
+    printf '%s\n' \
+      'linux=6.18.57' \
+      'qemu=11.1.2' \
+      'busybox=1.37.0' \
+      'dropbear=2026.94' \
+      'acceleration=tcg' > /opt/embeddedville/toolchain-release
+
 USER vscode
+WORKDIR /workspaces
