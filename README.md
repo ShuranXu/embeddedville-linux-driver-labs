@@ -1,5 +1,7 @@
 # Linux Device Drivers: Interfaces and Concurrency
 
+Starter version: `linux-driver-interfaces-v1.1.3`.
+
 This orphan release contains only the Level 1 learner starter and shared public tooling. Start with `./lab doctor`, then use `./lab build`, `./lab run --activity …`, and `./lab test --activity …`. Only `ldd1-capstone-qevent` can be sent to the protected evaluator with `./lab submit --activity ldd1-capstone-qevent`.
 
 The Codespaces image includes the pinned Linux kernel, BusyBox/Dropbear guest, and QEMU runtime. `./lab boot` creates an ephemeral local SSH key and starts the guest; `./lab reset` stops only the tracked guest and preserves learner source and evidence.
