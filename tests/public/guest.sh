@@ -7,6 +7,18 @@ cd /workspace
 dmesg -c >/dev/null 2>&1 || true
 
 case "$course_id" in
+  linux-device-drivers-introduction)
+    rmmod hello_driver 2>/dev/null || true
+    insmod ./hello_driver.ko
+    test -d /sys/module/hello_driver
+    test -c /dev/hello_driver
+    test "$(cat /dev/hello_driver)" = "hello from the kernel"
+    printf learner > /dev/hello_driver
+    dmesg | grep -q 'hello_driver: received 7 byte(s): learner'
+    rmmod hello_driver
+    test ! -e /dev/hello_driver
+    dmesg | grep -q 'hello_driver: unloaded'
+    ;;
   linux-device-drivers-interfaces)
     rmmod qevent 2>/dev/null || true
     insmod ./qevent.ko
