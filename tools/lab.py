@@ -73,11 +73,20 @@ def run_activity(args: argparse.Namespace) -> None:
     build(argparse.Namespace(activity=item))
     run("bash", "tests/public/run.sh", item)
     boot(argparse.Namespace())
-    guest("/bin/sh", "/workspace/tests/public/guest.sh", IDENTITY["courseId"], item)
+    guest("/bin/sh", "/workspace/tests/public/guest.sh", IDENTITY["courseId"], item, "direct")
+
+def install_activity(args: argparse.Namespace) -> None:
+    item = activity(args.activity)
+    build(argparse.Namespace(activity=item))
+    run("bash", "tests/public/run.sh", item)
+    boot(argparse.Namespace())
+    guest("/bin/sh", "/workspace/tests/public/guest.sh", IDENTITY["courseId"], item, "install")
 
 def test(args: argparse.Namespace) -> None:
     item = activity(args.activity)
     run_activity(args)
+    if IDENTITY["courseId"] == "linux-device-drivers-introduction":
+        guest("/bin/sh", "/workspace/tests/public/guest.sh", IDENTITY["courseId"], item, "install")
     evidence = ROOT / "evidence"; evidence.mkdir(exist_ok=True)
     (evidence / "manifest.json").write_text(json.dumps({"schemaVersion":1,"courseId":IDENTITY["courseId"],"contractVersion":IDENTITY["contractVersion"],"starterVersion":IDENTITY["starterVersion"],"activityId":item,"kernelVersion":LOCK["sources"]["linux"]["version"],"qemuVersion":LOCK["sources"]["qemu"]["version"],"acceleration":"tcg","generatedAt":int(time.time())}, indent=2)+"\n")
 
@@ -149,7 +158,7 @@ def main() -> None:
     parser=argparse.ArgumentParser(prog="./lab"); sub=parser.add_subparsers(required=True)
     for name,fn in (("doctor",doctor),("boot",boot),("reset",reset)):
         command=sub.add_parser(name); command.set_defaults(fn=fn)
-    for name,fn in (("build",build),("run",run_activity),("test",test),("package",package),("submit",submit)):
+    for name,fn in (("build",build),("run",run_activity),("install",install_activity),("test",test),("package",package),("submit",submit)):
         command=sub.add_parser(name); command.add_argument("--activity"); command.set_defaults(fn=fn)
     args=parser.parse_args(); args.fn(args)
 if __name__=="__main__": main()

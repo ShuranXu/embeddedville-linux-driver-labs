@@ -3,6 +3,6 @@
   "courseId": "linux-device-drivers-introduction",
   "contractVersion": "2026.10-linux-device-drivers-introduction-v1",
   "repository": "ShuranXu/embeddedville-linux-driver-labs",
-  "starterVersion": "linux-driver-introduction-v1.0.0",
+  "starterVersion": "linux-driver-introduction-v1.1.0",
   "activities": ["lddi-lab-build-load"]
 }
