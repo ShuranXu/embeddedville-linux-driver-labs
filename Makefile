@@ -1,5 +1,5 @@
-obj-m += qevent.o
-qevent-objs := src/qevent.o
+obj-m += hello_driver.o
+hello_driver-objs := src/hello_driver.o
 KDIR ?= /opt/embeddedville/linux-6.18.57
 PWD := $(shell pwd)
 

@@ -1,8 +1,8 @@
 {
   "schemaVersion": 1,
-  "contractVersion": "2026.10-linux-device-drivers-v1",
-  "courseId": "linux-device-drivers-interfaces",
-  "starterVersion": "linux-driver-interfaces-v1.1.3",
+  "contractVersion": "2026.10-linux-device-drivers-introduction-v1",
+  "courseId": "linux-device-drivers-introduction",
+  "starterVersion": "linux-driver-introduction-v1.1.0",
   "baseImage": "ubuntu:24.04@sha256:a2d43bffc46670d7108bb3c0468c67c5557c4c92e83e1e34cbff1322ad1b94dc",
   "toolchainImageDigest": "sha256:a09add7465bf3650be6f1c68d9d66e5b6670a891ced1898d649cf0584005e13e",
   "sources": {
@@ -12,5 +12,5 @@
     "dropbear": { "version": "2026.94", "url": "https://matt.ucc.asn.au/dropbear/releases/dropbear-2026.94.tar.bz2", "sha256": "e098034a843699200c8c977a991fff73159735bf795d5f72ef672c41a6b1ae81" }
   },
   "runtime": { "acceleration": "tcg", "sshBind": "127.0.0.1", "sshPort": 2222, "workspaceRoot": "/workspaces" },
-  "submissionAllowlist": ["src/", "include/", "Makefile", "evidence/manifest.json"]
+  "submissionAllowlist": []
 }
